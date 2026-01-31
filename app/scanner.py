@@ -82,11 +82,14 @@ def scan_document(image: np.ndarray) -> np.ndarray:
 
     # Perspective transform (apply ratio to scale back to original)
     warped = four_point_transform(orig, screen_cnt.reshape(4, 2) * ratio)
-    return warped
+    lab = cv2.cvtColor(warped, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
 
-    # Convert to grayscale & apply adaptive threshold
-    warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
-    T = threshold_local(warped_gray, 11, offset=10, method="gaussian")
-    scanned = (warped_gray > T).astype("uint8") * 255
+    # Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) to L channel
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    l = clahe.apply(l)
 
+    # Merge channels and convert back to BGR
+    enhanced = cv2.merge([l, a, b])
+    scanned = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
     return scanned
