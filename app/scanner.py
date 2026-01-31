@@ -82,6 +82,7 @@ def scan_document(image: np.ndarray) -> np.ndarray:
 
     # Perspective transform (apply ratio to scale back to original)
     warped = four_point_transform(orig, screen_cnt.reshape(4, 2) * ratio)
+    return warped
 
     # Convert to grayscale & apply adaptive threshold
     warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
