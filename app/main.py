@@ -1,4 +1,5 @@
 import io
+import os
 
 import cv2
 import numpy as np
@@ -11,12 +12,26 @@ from app.scanner import scan_document
 
 app = FastAPI()
 
+
+def _read_allowed_origins() -> list[str]:
+    # Comma-separated origins, e.g.:
+    # "https://skdoosh-blog.netlify.app,http://localhost:1313"
+    raw = os.getenv("DOC_SCANNER_ALLOWED_ORIGINS", "*")
+    origins = [item.strip() for item in raw.split(",") if item.strip()]
+    return origins or ["*"]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or ["https://yourblog.com"]
+    allow_origins=_read_allowed_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok", "service": "doc-scanner-backend"}
 
 
 @app.post("/scan")

@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: doc-scanner-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: DOC_SCANNER_ALLOWED_ORIGINS
+        value: "https://skdoosh-blog.netlify.app"
