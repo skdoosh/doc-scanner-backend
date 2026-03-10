@@ -77,14 +77,31 @@ def _resize_by_height(image: np.ndarray, height: int) -> np.ndarray:
     return cv2.resize(image, (new_width, height), interpolation=cv2.INTER_AREA)
 
 
-def scan_document(image: np.ndarray, enhance: bool = False) -> np.ndarray:
+def _resize_max_dimension(image: np.ndarray, max_dimension: int) -> np.ndarray:
+    h, w = image.shape[:2]
+    max_side = max(h, w)
+    if max_side <= max_dimension:
+        return image
+
+    scale = float(max_dimension) / float(max_side)
+    new_w = max(1, int(w * scale))
+    new_h = max(1, int(h * scale))
+    return cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+
+def scan_document(
+    image: np.ndarray,
+    enhance: bool = False,
+    max_output_dimension: int = 1800,
+    detection_height: int = 500,
+) -> np.ndarray:
     if image is None:
         raise ValueError("Invalid image")
 
     # Resize for faster processing
-    ratio = image.shape[0] / 500.0
+    ratio = image.shape[0] / float(detection_height)
     orig = image.copy()
-    resized = _resize_by_height(image, height=500)
+    resized = _resize_by_height(image, height=detection_height)
 
     # Use RESIZED image for edge detection
     gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
@@ -99,7 +116,7 @@ def scan_document(image: np.ndarray, enhance: bool = False) -> np.ndarray:
 
     # Preserve original color output by default.
     if not enhance:
-        return warped
+        return _resize_max_dimension(warped, max_output_dimension)
 
     lab = cv2.cvtColor(warped, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
@@ -111,4 +128,4 @@ def scan_document(image: np.ndarray, enhance: bool = False) -> np.ndarray:
     # Merge channels and convert back to BGR
     enhanced = cv2.merge([l, a, b])
     scanned = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
-    return scanned
+    return _resize_max_dimension(scanned, max_output_dimension)

@@ -3,7 +3,7 @@ import os
 
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from PIL import Image
@@ -35,7 +35,12 @@ async def healthz():
 
 
 @app.post("/scan")
-async def scan(file: UploadFile = File(...), enhance: bool = False):
+async def scan(
+    file: UploadFile = File(...),
+    enhance: bool = False,
+    max_dimension: int = Query(default=1800, ge=800, le=4000),
+    output: str = Query(default="jpeg"),
+):
     try:
         contents = await file.read()
         np_img = np.frombuffer(contents, np.uint8)
@@ -45,14 +50,29 @@ async def scan(file: UploadFile = File(...), enhance: bool = False):
                 status_code=400, detail="Uploaded file could not be decoded as an image"
             )
 
-        scanned = scan_document(image, enhance=enhance)
+        scanned = scan_document(
+            image,
+            enhance=enhance,
+            max_output_dimension=max_dimension,
+        )
 
-        pil_img = Image.fromarray(scanned)
+        # OpenCV uses BGR; Pillow expects RGB.
+        rgb_scanned = cv2.cvtColor(scanned, cv2.COLOR_BGR2RGB)
+        pil_img = Image.fromarray(rgb_scanned)
         buf = io.BytesIO()
-        pil_img.save(buf, format="PNG")
+        fmt = output.lower().strip()
+        if fmt not in {"png", "jpeg", "jpg"}:
+            raise HTTPException(status_code=400, detail="output must be png or jpeg")
+
+        if fmt == "png":
+            pil_img.save(buf, format="PNG", optimize=True)
+            media_type = "image/png"
+        else:
+            pil_img.save(buf, format="JPEG", quality=90, optimize=True)
+            media_type = "image/jpeg"
         buf.seek(0)
 
-        return StreamingResponse(buf, media_type="image/png")
+        return StreamingResponse(buf, media_type=media_type)
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
