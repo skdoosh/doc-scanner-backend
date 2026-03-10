@@ -1,7 +1,6 @@
 import cv2
 import imutils
 import numpy as np
-from skimage.filters import threshold_local
 
 
 def order_points(pts):
