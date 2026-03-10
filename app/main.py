@@ -35,7 +35,7 @@ async def healthz():
 
 
 @app.post("/scan")
-async def scan(file: UploadFile = File(...)):
+async def scan(file: UploadFile = File(...), enhance: bool = False):
     try:
         contents = await file.read()
         np_img = np.frombuffer(contents, np.uint8)
@@ -45,7 +45,7 @@ async def scan(file: UploadFile = File(...)):
                 status_code=400, detail="Uploaded file could not be decoded as an image"
             )
 
-        scanned = scan_document(image)
+        scanned = scan_document(image, enhance=enhance)
 
         pil_img = Image.fromarray(scanned)
         buf = io.BytesIO()

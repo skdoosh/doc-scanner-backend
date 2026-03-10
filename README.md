@@ -15,6 +15,8 @@ uvicorn app.main:app --reload
 
 - `GET /healthz`
 - `POST /scan` (multipart form with `file`)
+  - Optional query param: `enhance=true` to apply contrast enhancement.
+  - Default (`enhance=false`) preserves original colors.
 
 ## Render deploy
 

@@ -77,7 +77,7 @@ def _resize_by_height(image: np.ndarray, height: int) -> np.ndarray:
     return cv2.resize(image, (new_width, height), interpolation=cv2.INTER_AREA)
 
 
-def scan_document(image: np.ndarray) -> np.ndarray:
+def scan_document(image: np.ndarray, enhance: bool = False) -> np.ndarray:
     if image is None:
         raise ValueError("Invalid image")
 
@@ -96,6 +96,11 @@ def scan_document(image: np.ndarray) -> np.ndarray:
 
     # Perspective transform (apply ratio to scale back to original)
     warped = four_point_transform(orig, screen_cnt.reshape(4, 2) * ratio)
+
+    # Preserve original color output by default.
+    if not enhance:
+        return warped
+
     lab = cv2.cvtColor(warped, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
 
